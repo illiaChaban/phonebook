@@ -1,13 +1,13 @@
-var readline = require('readline');
-var fs = require('fs');
-var promisify = require('util').promisify
+const readline = require('readline');
+const fs = require('fs');
+const promisify = require('util').promisify
 
-const rl = readline.createInterface({
+let rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
 })
 
-var phonebook = {};
+let phonebook = {};
 
 fs.readFile('phonebook.txt', (err, entries) => {
     if (err) throw err;
@@ -15,8 +15,8 @@ fs.readFile('phonebook.txt', (err, entries) => {
     phonebook = entries;
 })
 
-var loadEntries = function() {
-    var book;
+let loadEntries = () => {
+    let book;
     fs.readFile('phonebook.txt', (err, entries) => {
         if (err) throw err;
         book = JSON.parse(entries);
@@ -26,7 +26,7 @@ var loadEntries = function() {
     
 }
 
-var saveEntries = function() {
+let saveEntries = () => {
     var entries = JSON.stringify(phonebook);
     fs.writeFile( 'phonebook.txt', entries, (err) => {
         if (err) throw err;
@@ -34,7 +34,42 @@ var saveEntries = function() {
     })
 }
 
-var openBook = function() {
+let lookUpEntry = (callback) => {
+    rl.question('Person\'s name: ', (name) => {
+        phonebook[name] ? console.log(phonebook[name]): console.log('no such entry');
+        callback();
+    })
+}
+
+let setEntry = (callback) => {
+    rl.question('Person\'s name: ', (name) => {
+        rl.question('Person\'s phone number: ', (number) => {
+            phonebook[name] = number;
+            console.log('entry is set up');
+            callback();
+        })
+    })
+}
+
+let deleteEntry = (callback) => {
+    rl.question('Person\'s name: ', (name) => {
+        if (phonebook[name]) {
+            delete phonebook[name];
+            console.log('entry was removed');
+        } else { console.log('no such entry'); }
+        callback();
+    })
+}
+
+let listEntries = () => {
+    for (let x in phonebook) {
+        console.log(`${x}: ${phonebook[x]}`)
+    }
+}
+    
+let router = [lookUpEntry, setEntry, deleteEntry, listEntries]
+
+let openBook = () => {
     
     rl.question(`
 Electronic Phone Book
@@ -47,49 +82,14 @@ Electronic Phone Book
 What do you want to do (1-5)?
 
 `, (answer) => {
-
-        if (answer === '1') {
-            rl.question('Person\'s name: ', (name) => {
-                phonebook[name] ? console.log(phonebook[name]): console.log('no such entry');
-
-                setTimeout(openBook, 1200);
-            })
-        } else 
-        if (answer === '2') {
-            rl.question('Person\'s name: ', (name) => {
-                rl.question('Person\'s phone number: ', (number) => {
-                    phonebook[name] = number;
-                    console.log('entry is set up')
-
-
-                    setTimeout(openBook, 1200);
-                })
-            })
-        } else
-        if (answer === '3') {
-            rl.question('Person\'s name: ', (name) => {
-                if (phonebook[name]) {
-                    delete phonebook[name];
-                    console.log('entry was removed');
-                } else { console.log('no such entry'); }
-
-                setTimeout(openBook, 1200);
-            })
-        } else
-        if (answer === '4') {
-            for (var x in phonebook) {
-                console.log(`${x}: ${phonebook[x]}`)
-            }
-
-            setTimeout(openBook, 1200);
-            
-        } else
-        if (answer === '5') {
+        let number = Number(answer);
+        if (answer === '5') { 
             saveEntries();
-
             rl.close();
-        }
-        
+            return;
+         }
+        router[number-1] ? router[number-1](() => setTimeout(openBook, 1200) ) : {}
+        number > 5 ? console.log('choose correct digit!!'): setTimeout(openBook, 1200)
     })
 
 }
